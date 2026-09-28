@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REPLAY CORE // CORE MONITOR</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="nav"></div>
+<div class="shell">
+  <div class="frame crt-flicker">
+    <div class="title">CORE MONITOR
+      <small>ÉTAT DU SYSTÈME EN TEMPS RÉEL</small>
+    </div>
+    <div class="stat-grid" id="stats">
+      <p class="muted small">CHARGEMENT...</p>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="title">TOTAL ARCHIVÉ</div>
+    <div id="total" style="font-size:2.2rem;color:var(--green);"></div>
+  </div>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/forms.js"></script>
+<script>
+async function loadStats() {
+  const { data, error } = await supabase.from("counters").select("*");
+  const el = document.getElementById("stats");
+  if (error || !data) { el.innerHTML = '<div class="msg error">ERREUR DE CHARGEMENT.</div>'; return; }
+
+  let total = 0;
+  el.innerHTML = data.map(c => {
+    total += c.count;
+    const label = FICHE_TYPES[c.type] ? FICHE_TYPES[c.type].label : c.type.toUpperCase();
+    return `<div class="stat-tile"><div class="n">${String(c.count).padStart(3,'0')}</div><div class="l">${label}</div></div>`;
+  }).join("");
+
+  document.getElementById("total").textContent = String(total).padStart(3, '0');
+}
+
+(async () => {
+  const profile = await requireSession();
+  if (!profile) return;
+  renderNav("monitor", profile);
+  loadStats();
+  setInterval(loadStats, 15000); // rafraîchi automatiquement toutes les 15s
+})();
+</script>
+</body>
+</html>

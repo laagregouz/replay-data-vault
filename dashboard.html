@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REPLAY CORE // IMPORT</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="nav"></div>
+<div class="shell">
+  <div class="frame">
+    <div class="title">IMPORT DE FICHE</div>
+    <div class="type-tabs" id="typeTabs"></div>
+
+    <label>FORMULAIRE (copiez-le si besoin, puis remplissez-le ci-dessous)</label>
+    <textarea id="formArea" spellcheck="false"></textarea>
+
+    <div style="margin-top:16px; display:flex; gap:10px;">
+      <button id="saveBtn">-save // ARCHIVER</button>
+      <button id="resetBtn" class="danger">RÉINITIALISER LE FORMULAIRE</button>
+    </div>
+    <div id="saveMsg"></div>
+  </div>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/forms.js"></script>
+<script>
+let currentType = "person";
+
+function loadTemplate(type) {
+  currentType = type;
+  document.getElementById("formArea").value = FICHE_TYPES[type].template;
+  document.querySelectorAll("#typeTabs button").forEach(b => {
+    b.classList.toggle("active", b.dataset.type === type);
+  });
+}
+
+function buildTabs() {
+  const el = document.getElementById("typeTabs");
+  el.innerHTML = Object.keys(FICHE_TYPES).map(t =>
+    `<button data-type="${t}">${FICHE_TYPES[t].label}</button>`).join("");
+  el.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => loadTemplate(b.dataset.type));
+  });
+}
+
+document.getElementById("resetBtn").addEventListener("click", () => loadTemplate(currentType));
+
+document.getElementById("saveBtn").addEventListener("click", async () => {
+  const raw = document.getElementById("formArea").value.trim();
+  const msgEl = document.getElementById("saveMsg");
+  msgEl.innerHTML = "";
+
+  if (!raw) { msgEl.innerHTML = '<div class="msg error">LE FORMULAIRE EST VIDE.</div>'; return; }
+
+  const links = Array.from(new Set((raw.match(/https?:\/\/\S+/g) || [])));
+
+  const { data, error } = await supabase.rpc("archive_fiche", {
+    p_type: currentType,
+    p_content: raw,
+    p_links: links
+  });
+
+  if (error || !data.ok) {
+    msgEl.innerHTML = '<div class="msg error">ÉCHEC DE L\'ARCHIVAGE. RÉESSAYEZ.</div>';
+    return;
+  }
+
+  msgEl.innerHTML = `<div class="msg">FICHE ARCHIVÉE SOUS <strong>${data.archive_id}</strong>.</div>`;
+  loadTemplate(currentType);
+});
+
+(async () => {
+  const profile = await requireSession();
+  if (!profile) return;
+  renderNav("dashboard", profile);
+  buildTabs();
+  loadTemplate("person");
+})();
+</script>
+</body>
+</html>

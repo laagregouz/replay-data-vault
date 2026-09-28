@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REPLAY CORE // ADMIN</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="nav"></div>
+<div class="shell">
+
+  <div class="frame">
+    <div class="title">CODES D'ACCRÉDITATION</div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="flex:1; min-width:140px;">
+        <label>CODE</label>
+        <input type="text" id="newCode" placeholder="ex: CORE-2026-A1">
+      </div>
+      <div style="min-width:140px;">
+        <label>NIVEAU</label>
+        <select id="newLevel">
+          <option value="MEMBRE">MEMBRE</option>
+          <option value="ARCHIVISTE">ARCHIVISTE</option>
+          <option value="ADMIN">ADMIN</option>
+        </select>
+      </div>
+      <div style="min-width:100px;">
+        <label>UTILISATIONS MAX</label>
+        <input type="number" id="newMaxUses" value="1" min="1">
+      </div>
+      <div style="min-width:160px;">
+        <label>EXPIRE LE (optionnel)</label>
+        <input type="date" id="newExpires">
+      </div>
+      <div><button id="createCodeBtn">CRÉER</button></div>
+    </div>
+    <label>NOTE (optionnel)</label>
+    <input type="text" id="newNote" placeholder="ex: donné à Kieran pour le recrutement RP">
+    <div id="codeMsg"></div>
+
+    <div style="margin-top:20px; overflow-x:auto;">
+      <table>
+        <thead><tr><th>Code</th><th>Niveau</th><th>Utilisations</th><th>Expire</th><th>Note</th><th></th></tr></thead>
+        <tbody id="codesTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="frame">
+    <div class="title">MEMBRES</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Identifiant</th><th>Niveau</th><th>Statut</th><th>Inscrit le</th><th></th></tr></thead>
+        <tbody id="membersTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script>
+async function loadCodes() {
+  const { data, error } = await supabase.from("accreditation_codes").select("*").order("created_at", { ascending: false });
+  const tbody = document.getElementById("codesTable");
+  if (error) { tbody.innerHTML = `<tr><td colspan="6">ERREUR</td></tr>`; return; }
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td>${c.code}</td>
+      <td>${c.level}</td>
+      <td>${c.uses} / ${c.max_uses}</td>
+      <td>${c.expires_at ? new Date(c.expires_at).toLocaleDateString('fr-FR') : '—'}</td>
+      <td>${c.note || '—'}</td>
+      <td><button class="danger delCode" data-code="${c.code}">SUPPRIMER</button></td>
+    </tr>`).join("");
+  tbody.querySelectorAll(".delCode").forEach(b => {
+    b.addEventListener("click", async () => {
+      await supabase.from("accreditation_codes").delete().eq("code", b.dataset.code);
+      loadCodes();
+    });
+  });
+}
+
+document.getElementById("createCodeBtn").addEventListener("click", async () => {
+  const code = document.getElementById("newCode").value.trim();
+  const level = document.getElementById("newLevel").value;
+  const maxUses = parseInt(document.getElementById("newMaxUses").value, 10) || 1;
+  const expiresRaw = document.getElementById("newExpires").value;
+  const note = document.getElementById("newNote").value.trim();
+  const msgEl = document.getElementById("codeMsg");
+
+  if (!code) { msgEl.innerHTML = '<div class="msg error">ENTREZ UN CODE.</div>'; return; }
+
+  const { error } = await supabase.from("accreditation_codes").insert({
+    code, level, max_uses: maxUses,
+    expires_at: expiresRaw ? new Date(expiresRaw).toISOString() : null,
+    note: note || null
+  });
+
+  if (error) {
+    msgEl.innerHTML = `<div class="msg error">${error.code === '23505' ? 'CE CODE EXISTE DÉJÀ.' : 'ÉCHEC DE LA CRÉATION.'}</div>`;
+    return;
+  }
+  msgEl.innerHTML = '<div class="msg">CODE CRÉÉ.</div>';
+  document.getElementById("newCode").value = "";
+  document.getElementById("newNote").value = "";
+  loadCodes();
+});
+
+async function loadMembers() {
+  const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  const tbody = document.getElementById("membersTable");
+  if (error) { tbody.innerHTML = `<tr><td colspan="5">ERREUR</td></tr>`; return; }
+
+  tbody.innerHTML = data.map(m => `
+    <tr>
+      <td>${m.identifiant}</td>
+      <td>
+        <select data-id="${m.id}" class="levelSelect">
+          <option value="MEMBRE" ${m.access_level==='MEMBRE'?'selected':''}>MEMBRE</option>
+          <option value="ARCHIVISTE" ${m.access_level==='ARCHIVISTE'?'selected':''}>ARCHIVISTE</option>
+          <option value="ADMIN" ${m.access_level==='ADMIN'?'selected':''}>ADMIN</option>
+        </select>
+      </td>
+      <td>${m.status}</td>
+      <td>${new Date(m.created_at).toLocaleDateString('fr-FR')}</td>
+      <td><button class="${m.status==='ACTIF'?'danger':''} toggleStatus" data-id="${m.id}" data-status="${m.status}">
+        ${m.status==='ACTIF' ? 'SUSPENDRE' : 'RÉACTIVER'}
+      </button></td>
+    </tr>`).join("");
+
+  tbody.querySelectorAll(".levelSelect").forEach(sel => {
+    sel.addEventListener("change", async () => {
+      await supabase.from("profiles").update({ access_level: sel.value }).eq("id", sel.dataset.id);
+      loadMembers();
+    });
+  });
+  tbody.querySelectorAll(".toggleStatus").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const newStatus = btn.dataset.status === "ACTIF" ? "SUSPENDU" : "ACTIF";
+      await supabase.from("profiles").update({ status: newStatus }).eq("id", btn.dataset.id);
+      loadMembers();
+    });
+  });
+}
+
+(async () => {
+  const profile = await requireAdmin();
+  if (!profile) return;
+  renderNav("admin", profile);
+  loadCodes();
+  loadMembers();
+})();
+</script>
+</body>
+</html>

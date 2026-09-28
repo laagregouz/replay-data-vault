@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REPLAY CORE // ARCHIVES</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div id="nav"></div>
+<div class="shell">
+  <div class="frame">
+    <div class="title">ARCHIVES</div>
+    <div class="type-tabs" id="typeTabs">
+      <button data-type="all" class="active">TOUT</button>
+    </div>
+    <div id="list"><p class="muted small">CHARGEMENT...</p></div>
+  </div>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/forms.js"></script>
+<script>
+let currentFilter = "all";
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function renderFiches(fiches) {
+  const el = document.getElementById("list");
+  if (!fiches.length) { el.innerHTML = '<p class="muted small">AUCUNE FICHE ARCHIVÉE.</p>'; return; }
+
+  el.innerHTML = fiches.map(f => {
+    const linksHtml = (f.links && f.links.length)
+      ? `<div class="archive-links">` + f.links.map(l => `<a href="${escapeHtml(l)}" target="_blank" rel="noopener">${escapeHtml(l)}</a>`).join("") + `</div>`
+      : "";
+    return `<div class="archive-block"><span class="archive-id">${escapeHtml(f.archive_id)}</span>${escapeHtml(f.content)}${linksHtml}</div>`;
+  }).join("");
+}
+
+async function loadFiches() {
+  document.getElementById("list").innerHTML = '<p class="muted small">CHARGEMENT...</p>';
+  let query = supabase.from("fiches").select("*").order("created_at", { ascending: false });
+  if (currentFilter !== "all") query = query.eq("type", currentFilter);
+  const { data, error } = await query;
+  if (error) { document.getElementById("list").innerHTML = '<div class="msg error">ERREUR DE CHARGEMENT.</div>'; return; }
+  renderFiches(data);
+}
+
+function buildTabs() {
+  const el = document.getElementById("typeTabs");
+  const typeButtons = Object.keys(FICHE_TYPES).map(t =>
+    `<button data-type="${t}">${FICHE_TYPES[t].label}</button>`).join("");
+  el.innerHTML = `<button data-type="all" class="active">TOUT</button>` + typeButtons;
+  el.querySelectorAll("button").forEach(b => {
+    b.addEventListener("click", () => {
+      currentFilter = b.dataset.type;
+      el.querySelectorAll("button").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      loadFiches();
+    });
+  });
+}
+
+(async () => {
+  const profile = await requireSession();
+  if (!profile) return;
+  renderNav("archives", profile);
+  buildTabs();
+  loadFiches();
+})();
+</script>
+</body>
+</html>
