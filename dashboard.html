@@ -59,7 +59,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
   const links = Array.from(new Set((raw.match(/https?:\/\/\S+/g) || [])));
 
-  const { data, error } = await supabase.rpc("archive_fiche", {
+  const { data, error } = await sb.rpc("archive_fiche", {
     p_type: currentType,
     p_content: raw,
     p_links: links

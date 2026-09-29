@@ -43,7 +43,7 @@ function renderFiches(fiches) {
 
 async function loadFiches() {
   document.getElementById("list").innerHTML = '<p class="muted small">CHARGEMENT...</p>';
-  let query = supabase.from("fiches").select("*").order("created_at", { ascending: false });
+  let query = sb.from("fiches").select("*").order("created_at", { ascending: false });
   if (currentFilter !== "all") query = query.eq("type", currentFilter);
   const { data, error } = await query;
   if (error) { document.getElementById("list").innerHTML = '<div class="msg error">ERREUR DE CHARGEMENT.</div>'; return; }

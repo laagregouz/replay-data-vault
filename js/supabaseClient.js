@@ -7,7 +7,7 @@
 const SUPABASE_URL = "https://jdugbmfdwnxvnfwdjpuk.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_61ZiXqbjBRiXzyrQfRkdtg_XX0hahvk";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Domaine fictif utilisé en interne pour l'authentification
 // (l'utilisateur ne voit et ne tape jamais d'email)

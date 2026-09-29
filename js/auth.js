@@ -1,19 +1,19 @@
 // REPLAY CORE — gestion de session (utilisé sur toutes les pages sauf index.html)
 
 async function requireSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
   if (!session) {
     window.location.href = "index.html";
     return null;
   }
-  const { data: profile, error } = await supabase
+  const { data: profile, error } = await sb
     .from("profiles")
     .select("*")
     .eq("id", session.user.id)
     .single();
 
   if (error || !profile) {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     window.location.href = "index.html";
     return null;
   }
@@ -36,7 +36,7 @@ async function requireAdmin() {
 }
 
 async function logout() {
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   window.location.href = "index.html";
 }
 

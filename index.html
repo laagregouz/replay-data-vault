@@ -69,7 +69,7 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
   const password = document.getElementById("loginPassword").value;
   if (!identifiant || !password) { showMsg("loginMsg","REMPLISSEZ TOUS LES CHAMPS.","error"); return; }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { error } = await sb.auth.signInWithPassword({
     email: identifiantToEmail(identifiant),
     password
   });
@@ -86,7 +86,7 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
   if (password.length < 6) { showMsg("registerMsg","MOT DE PASSE TROP COURT (6 CARACTÈRES MINIMUM).","error"); return; }
 
   const email = identifiantToEmail(identifiant);
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({ email, password });
+  const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
   if (signUpError) {
     showMsg("registerMsg", signUpError.message.includes("already") ? "IDENTIFIANT DÉJÀ UTILISÉ." : "ERREUR D'INSCRIPTION.", "error");
     return;
@@ -94,14 +94,14 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
 
   // Si la confirmation email est activée côté Supabase, il n'y a pas de session immédiate.
   if (!signUpData.session) {
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
     if (signInError) {
       showMsg("registerMsg","COMPTE CRÉÉ MAIS CONNEXION IMPOSSIBLE. Désactivez la confirmation email dans Supabase (Authentication → Providers → Email → Confirm email = OFF).","error");
       return;
     }
   }
 
-  const { data: regData, error: regError } = await supabase.rpc("register_with_code", {
+  const { data: regData, error: regError } = await sb.rpc("register_with_code", {
     p_code: code, p_identifiant: identifiant
   });
 
@@ -114,7 +114,7 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
       IDENTIFIANT_PRIS: "CET IDENTIFIANT EST DÉJÀ PRIS."
     };
     showMsg("registerMsg", map[reason] || "ÉCHEC DE L'INSCRIPTION.", "error");
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     return;
   }
 

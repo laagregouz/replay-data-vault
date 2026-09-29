@@ -29,7 +29,7 @@
 <script src="js/forms.js"></script>
 <script>
 async function loadStats() {
-  const { data, error } = await supabase.from("counters").select("*");
+  const { data, error } = await sb.from("counters").select("*");
   const el = document.getElementById("stats");
   if (error || !data) { el.innerHTML = '<div class="msg error">ERREUR DE CHARGEMENT.</div>'; return; }
 

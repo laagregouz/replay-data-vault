@@ -64,7 +64,7 @@
 <script src="js/auth.js"></script>
 <script>
 async function loadCodes() {
-  const { data, error } = await supabase.from("accreditation_codes").select("*").order("created_at", { ascending: false });
+  const { data, error } = await sb.from("accreditation_codes").select("*").order("created_at", { ascending: false });
   const tbody = document.getElementById("codesTable");
   if (error) { tbody.innerHTML = `<tr><td colspan="6">ERREUR</td></tr>`; return; }
   tbody.innerHTML = data.map(c => `
@@ -78,7 +78,7 @@ async function loadCodes() {
     </tr>`).join("");
   tbody.querySelectorAll(".delCode").forEach(b => {
     b.addEventListener("click", async () => {
-      await supabase.from("accreditation_codes").delete().eq("code", b.dataset.code);
+      await sb.from("accreditation_codes").delete().eq("code", b.dataset.code);
       loadCodes();
     });
   });
@@ -94,7 +94,7 @@ document.getElementById("createCodeBtn").addEventListener("click", async () => {
 
   if (!code) { msgEl.innerHTML = '<div class="msg error">ENTREZ UN CODE.</div>'; return; }
 
-  const { error } = await supabase.from("accreditation_codes").insert({
+  const { error } = await sb.from("accreditation_codes").insert({
     code, level, max_uses: maxUses,
     expires_at: expiresRaw ? new Date(expiresRaw).toISOString() : null,
     note: note || null
@@ -111,7 +111,7 @@ document.getElementById("createCodeBtn").addEventListener("click", async () => {
 });
 
 async function loadMembers() {
-  const { data, error } = await supabase.from("profiles").select("*").order("created_at", { ascending: false });
+  const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
   const tbody = document.getElementById("membersTable");
   if (error) { tbody.innerHTML = `<tr><td colspan="5">ERREUR</td></tr>`; return; }
 
@@ -134,14 +134,14 @@ async function loadMembers() {
 
   tbody.querySelectorAll(".levelSelect").forEach(sel => {
     sel.addEventListener("change", async () => {
-      await supabase.from("profiles").update({ access_level: sel.value }).eq("id", sel.dataset.id);
+      await sb.from("profiles").update({ access_level: sel.value }).eq("id", sel.dataset.id);
       loadMembers();
     });
   });
   tbody.querySelectorAll(".toggleStatus").forEach(btn => {
     btn.addEventListener("click", async () => {
       const newStatus = btn.dataset.status === "ACTIF" ? "SUSPENDU" : "ACTIF";
-      await supabase.from("profiles").update({ status: newStatus }).eq("id", btn.dataset.id);
+      await sb.from("profiles").update({ status: newStatus }).eq("id", btn.dataset.id);
       loadMembers();
     });
   });
