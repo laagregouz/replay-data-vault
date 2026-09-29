@@ -24,6 +24,7 @@
 <script src="js/forms.js"></script>
 <script>
 let currentFilter = "all";
+let isAdmin = false;
 
 function escapeHtml(s) {
   return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -37,8 +38,22 @@ function renderFiches(fiches) {
     const linksHtml = (f.links && f.links.length)
       ? `<div class="archive-links">` + f.links.map(l => `<a href="${escapeHtml(l)}" target="_blank" rel="noopener">${escapeHtml(l)}</a>`).join("") + `</div>`
       : "";
-    return `<div class="archive-block"><span class="archive-id">${escapeHtml(f.archive_id)}</span>${escapeHtml(f.content)}${linksHtml}</div>`;
+    const deleteBtn = isAdmin
+      ? `<div style="margin-top:10px; text-align:right;"><button class="danger delFiche" data-id="${f.id}" data-archive="${escapeHtml(f.archive_id)}" style="font-size:0.7rem; padding:4px 10px;">SUPPRIMER</button></div>`
+      : "";
+    return `<div class="archive-block"><span class="archive-id">${escapeHtml(f.archive_id)}</span>${escapeHtml(f.content)}${linksHtml}${deleteBtn}</div>`;
   }).join("");
+
+  if (isAdmin) {
+    el.querySelectorAll(".delFiche").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (!confirm(`Supprimer définitivement ${btn.dataset.archive} ? Cette action est irréversible.`)) return;
+        const { error } = await sb.from("fiches").delete().eq("id", btn.dataset.id);
+        if (error) { alert("Échec de la suppression."); return; }
+        loadFiches();
+      });
+    });
+  }
 }
 
 async function loadFiches() {
@@ -68,6 +83,7 @@ function buildTabs() {
 (async () => {
   const profile = await requireSession();
   if (!profile) return;
+  isAdmin = profile.access_level === "ADMIN";
   renderNav("archives", profile);
   buildTabs();
   loadFiches();

@@ -49,6 +49,19 @@
   </div>
 
   <div class="frame">
+    <div class="title">ARCHIVES // CORE MONITOR
+      <small>Vider les archives d'un type et/ou remettre son compteur à zéro</small>
+    </div>
+    <p class="msg warn small">Vider les archives supprime définitivement toutes les fiches de ce type. Réinitialiser le compteur sans vider les archives peut créer des doublons d'ID lors du prochain archivage.</p>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead><tr><th>Type</th><th>Fiches archivées</th><th>Compteur</th><th></th></tr></thead>
+        <tbody id="typesTable"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="frame">
     <div class="title">MEMBRES</div>
     <div style="overflow-x:auto;">
       <table>
@@ -62,6 +75,7 @@
 
 <script src="js/supabaseClient.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/forms.js"></script>
 <script>
 async function loadCodes() {
   const { data, error } = await sb.from("accreditation_codes").select("*").order("created_at", { ascending: false });
@@ -110,6 +124,54 @@ document.getElementById("createCodeBtn").addEventListener("click", async () => {
   loadCodes();
 });
 
+async function loadTypesTable() {
+  const tbody = document.getElementById("typesTable");
+  const [{ data: counters, error: cErr }, { data: fiches, error: fErr }] = await Promise.all([
+    sb.from("counters").select("*"),
+    sb.from("fiches").select("type")
+  ]);
+  if (cErr || fErr) { tbody.innerHTML = `<tr><td colspan="4">ERREUR</td></tr>`; return; }
+
+  const archiveCounts = {};
+  (fiches || []).forEach(f => { archiveCounts[f.type] = (archiveCounts[f.type] || 0) + 1; });
+
+  tbody.innerHTML = Object.keys(FICHE_TYPES).map(type => {
+    const counterRow = (counters || []).find(c => c.type === type);
+    const counterVal = counterRow ? counterRow.count : 0;
+    const archiveVal = archiveCounts[type] || 0;
+    return `
+    <tr>
+      <td>${FICHE_TYPES[type].label}</td>
+      <td>${archiveVal}</td>
+      <td>${counterVal}</td>
+      <td style="display:flex; gap:6px; flex-wrap:wrap;">
+        <button class="danger wipeType" data-type="${type}" style="font-size:0.7rem; padding:4px 10px;">VIDER LES ARCHIVES</button>
+        <button class="resetCounter" data-type="${type}" style="font-size:0.7rem; padding:4px 10px;">RÉINITIALISER LE COMPTEUR</button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  tbody.querySelectorAll(".wipeType").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const type = btn.dataset.type;
+      const label = FICHE_TYPES[type].label;
+      if (!confirm(`Supprimer DÉFINITIVEMENT toutes les fiches ${label} ? Cette action est irréversible.`)) return;
+      await sb.from("fiches").delete().eq("type", type);
+      await sb.from("counters").update({ count: 0 }).eq("type", type);
+      loadTypesTable();
+    });
+  });
+  tbody.querySelectorAll(".resetCounter").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const type = btn.dataset.type;
+      const label = FICHE_TYPES[type].label;
+      if (!confirm(`Remettre le compteur ${label} à zéro ? Si des fiches ${label} existent encore, le prochain archivage risque de créer un ID en double.`)) return;
+      await sb.from("counters").update({ count: 0 }).eq("type", type);
+      loadTypesTable();
+    });
+  });
+}
+
 async function loadMembers() {
   const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
   const tbody = document.getElementById("membersTable");
@@ -152,6 +214,7 @@ async function loadMembers() {
   if (!profile) return;
   renderNav("admin", profile);
   loadCodes();
+  loadTypesTable();
   loadMembers();
 })();
 </script>
