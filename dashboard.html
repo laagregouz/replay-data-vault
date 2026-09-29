@@ -17,6 +17,13 @@
     <label>FORMULAIRE (copiez-le si besoin, puis remplissez-le ci-dessous)</label>
     <textarea id="formArea" spellcheck="false"></textarea>
 
+    <div id="corruptedField" style="display:none; margin-top:8px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="corruptedCheck" style="width:auto;">
+        <span class="small muted">MARQUER COMME FICHE CORROMPUE (indice RP, visible dans les Archives avec un style altéré)</span>
+      </label>
+    </div>
+
     <div style="margin-top:16px; display:flex; gap:10px;">
       <button id="saveBtn">-save // ARCHIVER</button>
       <button id="resetBtn" class="danger">RÉINITIALISER LE FORMULAIRE</button>
@@ -60,11 +67,13 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   if (!raw) { SoundFX.error(); msgEl.innerHTML = '<div class="msg error">LE FORMULAIRE EST VIDE.</div>'; return; }
 
   const links = Array.from(new Set((raw.match(/https?:\/\/\S+/g) || [])));
+  const corrupted = document.getElementById("corruptedCheck").checked;
 
   const { data, error } = await sb.rpc("archive_fiche", {
     p_type: currentType,
     p_content: raw,
-    p_links: links
+    p_links: links,
+    p_corrupted: corrupted
   });
 
   if (error || !data.ok) {
@@ -75,6 +84,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
 
   SoundFX.success();
   msgEl.innerHTML = `<div class="msg">FICHE ARCHIVÉE SOUS <strong>${data.archive_id}</strong>.</div>`;
+  document.getElementById("corruptedCheck").checked = false;
   loadTemplate(currentType);
 });
 
@@ -86,6 +96,9 @@ document.getElementById("formArea").addEventListener("keydown", (e) => {
   const profile = await requireSession();
   if (!profile) return;
   renderNav("dashboard", profile);
+  if (profile.access_level === "ADMIN") {
+    document.getElementById("corruptedField").style.display = "block";
+  }
   buildTabs();
   loadTemplate("person");
 })();

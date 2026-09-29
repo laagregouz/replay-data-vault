@@ -10,6 +10,8 @@
 <body>
 <div id="nav"></div>
 <div class="shell">
+  <div id="incidentZone"></div>
+
   <div class="frame crt-flicker">
     <div class="title">CORE MONITOR
       <small>ÉTAT DU SYSTÈME EN TEMPS RÉEL</small>
@@ -22,6 +24,11 @@
     <div class="title">TOTAL ARCHIVÉ</div>
     <div id="total" style="font-size:2.2rem;color:var(--green);"></div>
   </div>
+
+  <div class="frame" id="logFrame" style="display:none;">
+    <div class="title">JOURNAL SYSTÈME</div>
+    <div id="logList"></div>
+  </div>
 </div>
 
 <script src="js/supabaseClient.js"></script>
@@ -29,6 +36,10 @@
 <script src="js/auth.js"></script>
 <script src="js/forms.js"></script>
 <script>
+function escapeHtml(s) {
+  return (s || "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 async function loadStats() {
   const { data, error } = await sb.from("counters").select("*");
   const el = document.getElementById("stats");
@@ -44,12 +55,36 @@ async function loadStats() {
   document.getElementById("total").textContent = String(total).padStart(3, '0');
 }
 
+async function loadIncident() {
+  const { data, error } = await sb.from("settings").select("*").in("key", ["incident_enabled", "incident_text"]);
+  const el = document.getElementById("incidentZone");
+  if (error || !data) { el.innerHTML = ""; return; }
+  const enabled = data.find(s => s.key === "incident_enabled")?.value === "true";
+  const text = data.find(s => s.key === "incident_text")?.value || "";
+  if (!enabled || !text.trim()) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="incident-banner"><span class="incident-title">⚠ ANOMALIE DÉTECTÉE</span>${escapeHtml(text)}</div>`;
+}
+
+async function loadLog() {
+  const { data, error } = await sb.from("system_log").select("*").order("entry_date", { ascending: false }).order("created_at", { ascending: false });
+  const frame = document.getElementById("logFrame");
+  const el = document.getElementById("logList");
+  if (error || !data || !data.length) { frame.style.display = "none"; return; }
+  frame.style.display = "block";
+  el.innerHTML = data.map(l => `
+    <div class="log-line"><span class="log-date">[${new Date(l.entry_date).toLocaleDateString('fr-FR')}]</span>${escapeHtml(l.message)}</div>
+  `).join("");
+}
+
 (async () => {
   const profile = await requireSession();
   if (!profile) return;
   renderNav("monitor", profile);
   loadStats();
-  setInterval(loadStats, 15000); // rafraîchi automatiquement toutes les 15s
+  loadIncident();
+  loadLog();
+  setInterval(loadStats, 15000);
+  setInterval(loadIncident, 30000);
 })();
 </script>
 </body>

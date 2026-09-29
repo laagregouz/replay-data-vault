@@ -42,7 +42,8 @@ function renderFiches(fiches) {
     const deleteBtn = isAdmin
       ? `<div style="margin-top:10px; text-align:right;"><button class="danger delFiche" data-id="${f.id}" data-archive="${escapeHtml(f.archive_id)}" style="font-size:0.7rem; padding:4px 10px;">SUPPRIMER</button></div>`
       : "";
-    return `<div class="archive-block"><span class="archive-id">${escapeHtml(f.archive_id)}</span>${escapeHtml(f.content)}${linksHtml}${deleteBtn}</div>`;
+    const blockClass = f.corrupted ? "archive-block corrupted" : "archive-block";
+    return `<div class="${blockClass}"><span class="archive-id">${escapeHtml(f.archive_id)}</span>${escapeHtml(f.content)}${linksHtml}${deleteBtn}</div>`;
   }).join("");
 
   if (isAdmin) {

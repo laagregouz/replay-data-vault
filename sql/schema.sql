@@ -179,3 +179,11 @@ grant execute on function archive_fiche(text, text, text[]) to authenticated;
 -- cette ligne en remplaçant TON_IDENTIFIANT par celui que tu as choisi :
 --
 -- update profiles set access_level = 'ADMIN' where identifiant = 'TON_IDENTIFIANT';
+
+-- =========================================================
+-- MIGRATIONS ULTÉRIEURES
+-- =========================================================
+-- Pour une installation neuve, exécute aussi, dans l'ordre, après ce fichier :
+--   sql/fix_rls_recursion.sql
+--   sql/admin_delete_reset.sql
+--   sql/rp_incident_features.sql

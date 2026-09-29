@@ -62,6 +62,39 @@
   </div>
 
   <div class="frame">
+    <div class="title">INCIDENT SYSTÈME
+      <small>Bannière visible par tous les membres actifs sur le Core Monitor</small>
+    </div>
+    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+      <input type="checkbox" id="incidentEnabled" style="width:auto;">
+      <span>ACTIVER LA BANNIÈRE D'INCIDENT</span>
+    </label>
+    <label>MESSAGE</label>
+    <textarea id="incidentText" style="min-height:80px;" placeholder="ex: Période du 04/09 au 25/09 : intégrité des données non confirmée. 3 fichiers absents du registre."></textarea>
+    <div style="margin-top:12px;"><button id="saveIncidentBtn">ENREGISTRER</button></div>
+    <div id="incidentMsg"></div>
+  </div>
+
+  <div class="frame">
+    <div class="title">JOURNAL SYSTÈME
+      <small>Lignes d'ambiance affichées sur le Core Monitor</small>
+    </div>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end;">
+      <div style="min-width:160px;">
+        <label>DATE</label>
+        <input type="date" id="logDate">
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <label>MESSAGE</label>
+        <input type="text" id="logMessage" placeholder="ex: ERREUR I/O — SECTEUR 7">
+      </div>
+      <div><button id="addLogBtn">AJOUTER</button></div>
+    </div>
+    <div id="logMsg"></div>
+    <div style="margin-top:16px;" id="logTable"></div>
+  </div>
+
+  <div class="frame">
     <div class="title">MEMBRES</div>
     <div style="overflow-x:auto;">
       <table>
@@ -158,6 +191,7 @@ async function loadTypesTable() {
       <td style="display:flex; gap:6px; flex-wrap:wrap;">
         <button class="danger wipeType" data-type="${type}" style="font-size:0.7rem; padding:4px 10px;">VIDER LES ARCHIVES</button>
         <button class="resetCounter" data-type="${type}" style="font-size:0.7rem; padding:4px 10px;">RÉINITIALISER LE COMPTEUR</button>
+        <button class="skipNumber" data-type="${type}" style="font-size:0.7rem; padding:4px 10px;">SAUTER UN NUMÉRO</button>
       </td>
     </tr>`;
   }).join("");
@@ -185,7 +219,97 @@ async function loadTypesTable() {
       loadTypesTable();
     });
   });
+  tbody.querySelectorAll(".skipNumber").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      SoundFX.click();
+      const type = btn.dataset.type;
+      const label = FICHE_TYPES[type].label;
+      const { data: row } = await sb.from("counters").select("count").eq("type", type).single();
+      const current = row ? row.count : 0;
+      if (!confirm(`Sauter le numéro ${current + 1} pour ${label} ? Aucune fiche ${current + 1} n'existera (trou volontaire dans la numérotation).`)) return;
+      await sb.from("counters").update({ count: current + 1 }).eq("type", type);
+      SoundFX.success();
+      loadTypesTable();
+    });
+  });
 }
+
+async function loadIncidentSettings() {
+  const { data, error } = await sb.from("settings").select("*").in("key", ["incident_enabled", "incident_text"]);
+  if (error || !data) return;
+  const enabled = data.find(s => s.key === "incident_enabled")?.value === "true";
+  const text = data.find(s => s.key === "incident_text")?.value || "";
+  document.getElementById("incidentEnabled").checked = enabled;
+  document.getElementById("incidentText").value = text;
+}
+
+document.getElementById("saveIncidentBtn").addEventListener("click", async () => {
+  SoundFX.click();
+  const enabled = document.getElementById("incidentEnabled").checked;
+  const text = document.getElementById("incidentText").value.trim();
+  const msgEl = document.getElementById("incidentMsg");
+
+  const { error: e1 } = await sb.from("settings").update({ value: enabled ? "true" : "false" }).eq("key", "incident_enabled");
+  const { error: e2 } = await sb.from("settings").update({ value: text }).eq("key", "incident_text");
+
+  if (e1 || e2) {
+    SoundFX.error();
+    msgEl.innerHTML = '<div class="msg error">ÉCHEC DE L\'ENREGISTREMENT.</div>';
+    return;
+  }
+  SoundFX.success();
+  msgEl.innerHTML = '<div class="msg">ENREGISTRÉ.</div>';
+});
+
+document.getElementById("incidentText").addEventListener("keydown", (e) => {
+  if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") SoundFX.key();
+});
+
+async function loadLogEntries() {
+  const { data, error } = await sb.from("system_log").select("*").order("entry_date", { ascending: false }).order("created_at", { ascending: false });
+  const el = document.getElementById("logTable");
+  if (error) { el.innerHTML = '<div class="msg error">ERREUR DE CHARGEMENT.</div>'; return; }
+  if (!data.length) { el.innerHTML = '<p class="muted small">AUCUNE ENTRÉE.</p>'; return; }
+
+  el.innerHTML = data.map(l => `
+    <div class="log-line" style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+      <span><span class="log-date">[${new Date(l.entry_date).toLocaleDateString('fr-FR')}]</span>${l.message}</span>
+      <button class="danger delLog" data-id="${l.id}" style="font-size:0.65rem; padding:3px 8px;">SUPPRIMER</button>
+    </div>`).join("");
+
+  el.querySelectorAll(".delLog").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      SoundFX.click();
+      await sb.from("system_log").delete().eq("id", btn.dataset.id);
+      loadLogEntries();
+    });
+  });
+}
+
+document.getElementById("logMessage").addEventListener("keydown", (e) => {
+  if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") SoundFX.key();
+});
+
+document.getElementById("addLogBtn").addEventListener("click", async () => {
+  SoundFX.click();
+  const dateVal = document.getElementById("logDate").value;
+  const message = document.getElementById("logMessage").value.trim();
+  const msgEl = document.getElementById("logMsg");
+
+  if (!message) { SoundFX.error(); msgEl.innerHTML = '<div class="msg error">ENTREZ UN MESSAGE.</div>'; return; }
+
+  const { error } = await sb.from("system_log").insert({
+    entry_date: dateVal || new Date().toISOString().slice(0, 10),
+    message
+  });
+
+  if (error) { SoundFX.error(); msgEl.innerHTML = '<div class="msg error">ÉCHEC DE L\'AJOUT.</div>'; return; }
+
+  SoundFX.success();
+  msgEl.innerHTML = '';
+  document.getElementById("logMessage").value = "";
+  loadLogEntries();
+});
 
 async function loadMembers() {
   const { data, error } = await sb.from("profiles").select("*").order("created_at", { ascending: false });
@@ -232,6 +356,8 @@ async function loadMembers() {
   renderNav("admin", profile);
   loadCodes();
   loadTypesTable();
+  loadIncidentSettings();
+  loadLogEntries();
   loadMembers();
 })();
 </script>
