@@ -93,13 +93,21 @@ async function loadCodes() {
     </tr>`).join("");
   tbody.querySelectorAll(".delCode").forEach(b => {
     b.addEventListener("click", async () => {
+      SoundFX.click();
       await sb.from("accreditation_codes").delete().eq("code", b.dataset.code);
       loadCodes();
     });
   });
 }
 
+["newCode", "newNote"].forEach(id => {
+  document.getElementById(id).addEventListener("keydown", (e) => {
+    if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") SoundFX.key();
+  });
+});
+
 document.getElementById("createCodeBtn").addEventListener("click", async () => {
+  SoundFX.click();
   const code = document.getElementById("newCode").value.trim();
   const level = document.getElementById("newLevel").value;
   const maxUses = parseInt(document.getElementById("newMaxUses").value, 10) || 1;
@@ -116,9 +124,11 @@ document.getElementById("createCodeBtn").addEventListener("click", async () => {
   });
 
   if (error) {
+    SoundFX.error();
     msgEl.innerHTML = `<div class="msg error">${error.code === '23505' ? 'CE CODE EXISTE DÉJÀ.' : 'ÉCHEC DE LA CRÉATION.'}</div>`;
     return;
   }
+  SoundFX.success();
   msgEl.innerHTML = '<div class="msg">CODE CRÉÉ.</div>';
   document.getElementById("newCode").value = "";
   document.getElementById("newNote").value = "";
@@ -154,20 +164,24 @@ async function loadTypesTable() {
 
   tbody.querySelectorAll(".wipeType").forEach(btn => {
     btn.addEventListener("click", async () => {
+      SoundFX.click();
       const type = btn.dataset.type;
       const label = FICHE_TYPES[type].label;
       if (!confirm(`Supprimer DÉFINITIVEMENT toutes les fiches ${label} ? Cette action est irréversible.`)) return;
       await sb.from("fiches").delete().eq("type", type);
       await sb.from("counters").update({ count: 0 }).eq("type", type);
+      SoundFX.success();
       loadTypesTable();
     });
   });
   tbody.querySelectorAll(".resetCounter").forEach(btn => {
     btn.addEventListener("click", async () => {
+      SoundFX.click();
       const type = btn.dataset.type;
       const label = FICHE_TYPES[type].label;
       if (!confirm(`Remettre le compteur ${label} à zéro ? Si des fiches ${label} existent encore, le prochain archivage risque de créer un ID en double.`)) return;
       await sb.from("counters").update({ count: 0 }).eq("type", type);
+      SoundFX.success();
       loadTypesTable();
     });
   });
@@ -197,12 +211,14 @@ async function loadMembers() {
 
   tbody.querySelectorAll(".levelSelect").forEach(sel => {
     sel.addEventListener("change", async () => {
+      SoundFX.click();
       await sb.from("profiles").update({ access_level: sel.value }).eq("id", sel.dataset.id);
       loadMembers();
     });
   });
   tbody.querySelectorAll(".toggleStatus").forEach(btn => {
     btn.addEventListener("click", async () => {
+      SoundFX.click();
       const newStatus = btn.dataset.status === "ACTIF" ? "SUSPENDU" : "ACTIF";
       await sb.from("profiles").update({ status: newStatus }).eq("id", btn.dataset.id);
       loadMembers();

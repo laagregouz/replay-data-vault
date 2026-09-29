@@ -78,6 +78,10 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   loadTemplate(currentType);
 });
 
+document.getElementById("formArea").addEventListener("keydown", (e) => {
+  if (e.key.length === 1 || e.key === "Backspace" || e.key === "Enter") SoundFX.key();
+});
+
 (async () => {
   const profile = await requireSession();
   if (!profile) return;

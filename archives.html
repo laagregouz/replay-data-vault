@@ -73,6 +73,7 @@ function buildTabs() {
   el.innerHTML = `<button data-type="all" class="active">TOUT</button>` + typeButtons;
   el.querySelectorAll("button").forEach(b => {
     b.addEventListener("click", () => {
+      SoundFX.click();
       currentFilter = b.dataset.type;
       el.querySelectorAll("button").forEach(x => x.classList.remove("active"));
       b.classList.add("active");
