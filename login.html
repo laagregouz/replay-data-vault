@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REPLAY CORE // ACCÈS</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="shell">
+  <div class="frame crt-flicker center">
+    <div class="title">REPLAY CORE
+      <small>SYSTÈME D'ARCHIVAGE // ACCÈS RESTREINT</small>
+    </div>
+    <p class="muted small">Connexion par identifiant, sans email.</p>
+  </div>
+
+  <div class="frame">
+    <div class="type-tabs">
+      <button id="tabLogin" class="active">CONNEXION</button>
+      <button id="tabRegister">INSCRIPTION</button>
+    </div>
+
+    <div id="loginForm">
+      <label>IDENTIFIANT</label>
+      <input type="text" id="loginIdentifiant" autocomplete="username">
+      <label>MOT DE PASSE</label>
+      <input type="password" id="loginPassword" autocomplete="current-password">
+      <div style="margin-top:16px;"><button id="loginBtn">SE CONNECTER</button></div>
+      <div id="loginMsg"></div>
+    </div>
+
+    <div id="registerForm" style="display:none;">
+      <label>CODE D'ACCRÉDITATION</label>
+      <input type="text" id="regCode">
+      <label>IDENTIFIANT SOUHAITÉ</label>
+      <input type="text" id="regIdentifiant">
+      <label>MOT DE PASSE</label>
+      <input type="password" id="regPassword" autocomplete="new-password">
+      <div style="margin-top:16px;"><button id="registerBtn">CRÉER LE COMPTE</button></div>
+      <div id="registerMsg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/supabaseClient.js"></script>
+<script>
+const tabLogin = document.getElementById("tabLogin");
+const tabRegister = document.getElementById("tabRegister");
+const loginForm = document.getElementById("loginForm");
+const registerForm = document.getElementById("registerForm");
+
+tabLogin.addEventListener("click", () => {
+  tabLogin.classList.add("active"); tabRegister.classList.remove("active");
+  loginForm.style.display = "block"; registerForm.style.display = "none";
+});
+tabRegister.addEventListener("click", () => {
+  tabRegister.classList.add("active"); tabLogin.classList.remove("active");
+  registerForm.style.display = "block"; loginForm.style.display = "none";
+});
+
+function showMsg(id, text, type) {
+  document.getElementById(id).innerHTML = `<div class="msg ${type||''}">${text}</div>`;
+}
+
+document.getElementById("loginBtn").addEventListener("click", async () => {
+  const identifiant = document.getElementById("loginIdentifiant").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  if (!identifiant || !password) { showMsg("loginMsg","REMPLISSEZ TOUS LES CHAMPS.","error"); return; }
+
+  const { error } = await sb.auth.signInWithPassword({
+    email: identifiantToEmail(identifiant),
+    password
+  });
+  if (error) { showMsg("loginMsg","IDENTIFIANT OU MOT DE PASSE INCORRECT.","error"); return; }
+  window.location.href = "dashboard.html";
+});
+
+document.getElementById("registerBtn").addEventListener("click", async () => {
+  const code = document.getElementById("regCode").value.trim();
+  const identifiant = document.getElementById("regIdentifiant").value.trim();
+  const password = document.getElementById("regPassword").value;
+
+  if (!code || !identifiant || !password) { showMsg("registerMsg","REMPLISSEZ TOUS LES CHAMPS.","error"); return; }
+  if (password.length < 6) { showMsg("registerMsg","MOT DE PASSE TROP COURT (6 CARACTÈRES MINIMUM).","error"); return; }
+
+  const email = identifiantToEmail(identifiant);
+  const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+  if (signUpError) {
+    showMsg("registerMsg", signUpError.message.includes("already") ? "IDENTIFIANT DÉJÀ UTILISÉ." : "ERREUR D'INSCRIPTION.", "error");
+    return;
+  }
+
+  // Si la confirmation email est activée côté Supabase, il n'y a pas de session immédiate.
+  if (!signUpData.session) {
+    const { error: signInError } = await sb.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      showMsg("registerMsg","COMPTE CRÉÉ MAIS CONNEXION IMPOSSIBLE. Désactivez la confirmation email dans Supabase (Authentication → Providers → Email → Confirm email = OFF).","error");
+      return;
+    }
+  }
+
+  const { data: regData, error: regError } = await sb.rpc("register_with_code", {
+    p_code: code, p_identifiant: identifiant
+  });
+
+  if (regError || !regData.ok) {
+    const reason = regData && regData.error;
+    const map = {
+      CODE_INTROUVABLE: "CODE D'ACCRÉDITATION INTROUVABLE.",
+      CODE_EXPIRE: "CE CODE A EXPIRÉ.",
+      CODE_EPUISE: "CE CODE A DÉJÀ ÉTÉ UTILISÉ.",
+      IDENTIFIANT_PRIS: "CET IDENTIFIANT EST DÉJÀ PRIS."
+    };
+    showMsg("registerMsg", map[reason] || "ÉCHEC DE L'INSCRIPTION.", "error");
+    await sb.auth.signOut();
+    return;
+  }
+
+  window.location.href = "dashboard.html";
+});
+</script>
+</body>
+</html>

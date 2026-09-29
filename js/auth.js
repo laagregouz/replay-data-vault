@@ -3,7 +3,7 @@
 async function requireSession() {
   const { data: { session } } = await sb.auth.getSession();
   if (!session) {
-    window.location.href = "index.html";
+    window.location.href = "login.html";
     return null;
   }
   const { data: profile, error } = await sb
@@ -14,7 +14,7 @@ async function requireSession() {
 
   if (error || !profile) {
     await sb.auth.signOut();
-    window.location.href = "index.html";
+    window.location.href = "login.html";
     return null;
   }
   if (profile.status === "SUSPENDU") {
@@ -37,7 +37,7 @@ async function requireAdmin() {
 
 async function logout() {
   await sb.auth.signOut();
-  window.location.href = "index.html";
+  window.location.href = "login.html";
 }
 
 function renderNav(active, profile) {
