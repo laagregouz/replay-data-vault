@@ -1,7 +1,7 @@
 -- =========================================================
 -- DONNÉES DE DÉPART — intrigue "fichiers disparus"
 -- Version alignée sur le lore officiel de GLIFE-REWIND
--- (San Andreas / Los Santos, districts, corporations, gangs)
+-- Kieran Vale ("Replay") opère depuis le district VERDANT EMPIRE
 -- À COLLER une seule fois dans : Supabase → SQL Editor → RUN
 -- (peut être modifié/adapté avant de lancer, ou relancé après avoir
 --  vidé les archives depuis le panneau admin)
@@ -12,15 +12,15 @@ insert into fiches (type, number, archive_id, content, links, author_id, corrupt
 -- PERSON ---------------------------------------------------
 ('person', 1, 'PERSON_001',
 'TYPE : PERSON
-NOM : Ravi Morelos
-ÂGE : ~50 ans (estimation)
-ORIGINE : Crimson Salva
-PROFESSION : Fixer — intermédiaire officieux du district
-LOCALISATION : Crimson Salva, secteur des hangars désaffectés
-CONTACT : relais chiffré local, changement de fréquence irrégulier
-DESCRIPTION : Contact historique de Kieran depuis son installation à Crimson Salva. Connaît chaque recoin du district, des voies ferrées rouillées aux laboratoires clandestins qui n''apparaissent sur aucun registre officiel. Ne travaille pour aucune corpo, ne refuse jamais un service bien payé.
-RELATIONS : fournit accès aux réseaux noirs, aux contrats et aux informations de terrain
-NOTES : Fiable tant que le prix est bon. Ne pose jamais de questions sur l''usage fait de ses informations.', '{}', null, false, '2026-08-15 10:00:00+02'),
+NOM : Elias Wren
+ÂGE : ~45 ans (estimation)
+ORIGINE : Verdant Empire
+PROFESSION : Membre de l''association de quartier / milice privée locale
+LOCALISATION : Verdant Empire, secteur résidentiel Est
+CONTACT : relais discret via le réseau de voisinage
+DESCRIPTION : Contact prudent de Kieran au sein des milices privées financées par les associations de quartier de Verdant Empire. Officiellement chargé de la "sécurité communautaire", il ferme les yeux sur certaines activités en échange d''informations.
+RELATIONS : accès aux patrouilles privées et aux registres d''accès du quartier
+NOTES : Fiable mais nerveux. N''aime pas qu''on remonte jusqu''à lui.', '{}', null, false, '2026-08-15 10:00:00+02'),
 
 ('person', 2, 'PERSON_002',
 'TYPE : PERSON
@@ -28,7 +28,7 @@ NOM : Talia Voss
 ÂGE : 30-35 ans (estimation)
 ORIGINE : lisière ouest de Verdant Empire
 PROFESSION : Courtière en données, contact occasionnel du réseau Sombra Fuerte
-LOCALISATION : mobile — opère depuis un atelier de casse itinérant
+LOCALISATION : mobile — opère depuis un atelier de casse en bordure du quartier
 CONTACT : canal crypté, rotation hebdomadaire des fréquences
 DESCRIPTION : Vend des accès à des bases de données fermées, y compris certains registres corporatifs. Jamais confirmé, mais tout indique un lien avec les "Fantômes du Réseau" sans en porter les couleurs.
 RELATIONS : source occasionnelle, aucun lien officiel déclaré
@@ -49,11 +49,11 @@ NOTES : Correspond-elle à Talia Voss ? Vérification impossible, fiche PERSON_0
 -- MEMORY ---------------------------------------------------
 ('memory', 1, 'MEMORY_001',
 'TYPE : MEMORY
-TITRE : Rendez-vous au dépôt de fret
+TITRE : Rendez-vous avec Elias Wren
 DATE : 15/08/2026
-LIEU : Dépôt de fret abandonné, Crimson Salva
-PERSONNES : Kieran Vale, Ravi Morelos
-CONTENU : Discussion sur les mouvements récents observés autour des installations portuaires du district — présence inhabituelle de véhicules sans marque, sans plaque corporative visible.
+LIEU : Verdant Empire, poste de garde de l''association de quartier
+PERSONNES : Kieran Vale, Elias Wren
+CONTENU : Discussion sur des mouvements inhabituels signalés en bordure du quartier — véhicules blindés sans marquage corporatif, présence accrue aux abords des zones pavillonnaires.
 IMPORTANCE : Moyenne
 NOTES : À recouper avec PERSON_001 et EVENT_002.', '{}', null, false, '2026-08-15 18:00:00+02'),
 
@@ -63,7 +63,7 @@ TITRE : Interception d''un flux non identifié
 DATE : 28/08/2026
 LIEU : Relais réseau, lisière de Verdant Empire
 PERSONNES : Kieran Vale
-CONTENU : Un flux de données chiffré a transité par le noyau d''archivage sans avoir été demandé. Signature de compression inhabituelle, proche de ce que Talia Voss appelle les protocoles "réseau propre" du Lotus.
+CONTENU : Un flux de données chiffré a transité par le noyau d''archivage sans avoir été demandé. Signature de compression inhabituelle, proche de ce que Talia Voss attribue aux protocoles utilisés par Sombra Fuerte.
 IMPORTANCE : Élevée
 NOTES : Origine jamais formellement identifiée.', '{}', null, false, '2026-08-28 22:10:00+02'),
 
@@ -80,21 +80,21 @@ NOTES : Voir bannière d''incident.', '{}', null, false, '2026-09-26 09:00:00+02
 -- EVENT ------------------------------------------------------
 ('event', 1, 'EVENT_001',
 'TYPE : EVENT
-NOM : Échange de tirs sur la ligne 9
+NOM : Accrochage près du bunker souterrain
 DATE : 20/08/2026
-LIEU : Crimson Salva, dépôt de fret ferroviaire
-PARTICIPANTS : éléments non revendiqués — signes distinctifs compatibles avec Scar et Void
-DESCRIPTION : Brève escarmouche entre deux groupes armés dans le secteur ferroviaire. Aucune revendication officielle, accès au secteur restreint pendant 48h par mesure de sécurité.
+LIEU : Verdant Empire, villa isolée en périphérie
+PARTICIPANTS : éléments non revendiqués — signes distinctifs compatibles avec Nox MC et Sombra Fuerte
+DESCRIPTION : Brève escarmouche entre deux groupes armés à la lisière du quartier. Aucune revendication officielle, patrouilles de la milice privée renforcées pendant 48h.
 CONSÉQUENCES : aucune donnée archivée perdue à l''époque
 NOTES : Premier signe avant-coureur ?', '{}', null, false, '2026-08-20 08:00:00+02'),
 
 ('event', 2, 'EVENT_002',
 'TYPE : EVENT
-NOM : Livraison suspecte au quai de fret
+NOM : Convoi blindé suspect
 DATE : 01/09/2026
-LIEU : Crimson Salva, quai de fret portuaire
-PARTICIPANTS : individus non identifiés (x2), véhicule sans plaque
-DESCRIPTION : Échange rapide de matériel non identifié, sans logo corporatif visible — profil qui correspond au mode opératoire prêté à Void dans le secteur.
+LIEU : Verdant Empire, route d''accès Est
+PARTICIPANTS : individus non identifiés, véhicules blindés sans plaque
+DESCRIPTION : Passage rapide d''un convoi sans logo corporatif visible — profil qui correspond au mode opératoire prêté à Nox MC dans le secteur.
 CONSÉQUENCES : surveillance renforcée décidée par Kieran
 NOTES : Lien possible avec MEMORY_001.', '{}', null, false, '2026-09-01 20:45:00+02'),
 
@@ -113,9 +113,9 @@ NOTES : —', '{}', null, false, '2026-09-26 09:30:00+02'),
 'TYPE : ANOMALY
 NOM : Résonance inexpliquée
 NATURE : Électromagnétique
-LOCALISATION : Crimson Salva, périmètre du dépôt logistique portuaire
+LOCALISATION : Verdant Empire, périmètre d''une villa isolée
 DATE : 22/08/2026
-DESCRIPTION : Pics de résonance détectés près d''un site associé aux mouvements de Void, cause non identifiée.
+DESCRIPTION : Pics de résonance détectés près d''un site associé aux mouvements de Nox MC, cause non identifiée.
 NIVEAU DE RISQUE : Faible
 NOTES : À surveiller.', '{}', null, false, '2026-08-22 11:20:00+02'),
 
@@ -143,7 +143,7 @@ NOTES : Anomalie centrale de l''intrigue actuelle.', '{}', null, true, '2026-09-
 ('fragment', 1, 'FRAGMENT_001',
 'TYPE : FRAGMENT
 TITRE : Extrait audio corrompu
-SOURCE : Relais radio, Crimson Salva
+SOURCE : Relais radio, Verdant Empire
 DATE : 18/08/2026
 CONTENU : "...ne peuvent pas savoir... avant le vingt-cinq..."
 ORIGINE : Inconnue
@@ -221,7 +221,7 @@ Aucune trace de sauvegarde correspondante.
 
 -- Quelques lignes pour le journal système
 insert into system_log (entry_date, message) values
-('2026-09-04', 'ERREUR I/O — SECTEUR CRIMSON SALVA'),
+('2026-09-04', 'ERREUR I/O — SECTEUR VERDANT EMPIRE'),
 ('2026-09-12', 'ACCÈS NON AUTORISÉ DÉTECTÉ'),
 ('2026-09-25', 'REDÉMARRAGE AUTOMATIQUE DU NOYAU'),
 ('2026-09-26', 'JOURNALISATION RÉTABLIE — 21 JOURS SANS ENREGISTREMENT');
