@@ -84,6 +84,7 @@
 
 <input id="hiddenInput" autocomplete="off" autocapitalize="off" spellcheck="false">
 
+<script src="js/sound.js"></script>
 <script>
 const body = document.getElementById("cmdBody");
 const hiddenInput = document.getElementById("hiddenInput");
@@ -137,7 +138,9 @@ async function runCommand(cmd) {
     for (const s of steps) {
       await new Promise(r => setTimeout(r, 450));
       println(s, "ok");
+      SoundFX.boot();
     }
+    SoundFX.success();
     await new Promise(r => setTimeout(r, 500));
     window.location.href = "login.html";
     return;
@@ -154,6 +157,7 @@ async function runCommand(cmd) {
     return;
   }
 
+  SoundFX.error();
   println(`'${cmd}' n'est pas reconnu en tant que commande interne`, "err");
   println("ou externe, un programme exécutable ou un fichier de commandes.", "err");
   println("");
@@ -175,6 +179,7 @@ hiddenInput.addEventListener("keydown", (e) => {
   } else if (e.key.length === 1) {
     typed += e.key;
     currentLine.textContent = typed;
+    SoundFX.key();
   }
 });
 

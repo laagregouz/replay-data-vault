@@ -56,16 +56,29 @@ function renderNav(active, profile) {
   if (!el) return;
   const adminLink = profile && profile.access_level === "ADMIN"
     ? `<a href="admin.html" class="${active === 'admin' ? 'active' : ''}">ADMIN</a>` : "";
+  const soundOn = typeof SoundFX !== "undefined" ? SoundFX.isEnabled() : true;
   el.innerHTML = `
     <nav class="topbar">
-      <span class="brand">REPLAY // CORE</span>
+      <span class="brand"><span class="online-dot"></span>REPLAY // CORE</span>
       <div class="links">
         <a href="dashboard.html" class="${active === 'dashboard' ? 'active' : ''}">IMPORT</a>
         <a href="archives.html" class="${active === 'archives' ? 'active' : ''}">ARCHIVES</a>
         <a href="monitor.html" class="${active === 'monitor' ? 'active' : ''}">CORE MONITOR</a>
         ${adminLink}
         <a href="#" id="logoutLink">DÉCONNEXION</a>
+        <button class="sound-toggle" id="soundToggle">${soundOn ? "🔊 SON" : "🔇 SON"}</button>
       </div>
     </nav>`;
   document.getElementById("logoutLink").addEventListener("click", (e) => { e.preventDefault(); logout(); });
+  const soundBtn = document.getElementById("soundToggle");
+  if (soundBtn && typeof SoundFX !== "undefined") {
+    soundBtn.addEventListener("click", () => {
+      const on = SoundFX.toggle();
+      soundBtn.textContent = on ? "🔊 SON" : "🔇 SON";
+      if (on) SoundFX.click();
+    });
+  }
+  el.querySelectorAll(".links a").forEach(a => {
+    a.addEventListener("click", () => { if (typeof SoundFX !== "undefined") SoundFX.click(); });
+  });
 }

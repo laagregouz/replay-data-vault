@@ -26,6 +26,7 @@
 </div>
 
 <script src="js/supabaseClient.js"></script>
+<script src="js/sound.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/forms.js"></script>
 <script>
@@ -44,18 +45,19 @@ function buildTabs() {
   el.innerHTML = Object.keys(FICHE_TYPES).map(t =>
     `<button data-type="${t}">${FICHE_TYPES[t].label}</button>`).join("");
   el.querySelectorAll("button").forEach(b => {
-    b.addEventListener("click", () => loadTemplate(b.dataset.type));
+    b.addEventListener("click", () => { SoundFX.click(); loadTemplate(b.dataset.type); });
   });
 }
 
-document.getElementById("resetBtn").addEventListener("click", () => loadTemplate(currentType));
+document.getElementById("resetBtn").addEventListener("click", () => { SoundFX.click(); loadTemplate(currentType); });
 
 document.getElementById("saveBtn").addEventListener("click", async () => {
+  SoundFX.click();
   const raw = document.getElementById("formArea").value.trim();
   const msgEl = document.getElementById("saveMsg");
   msgEl.innerHTML = "";
 
-  if (!raw) { msgEl.innerHTML = '<div class="msg error">LE FORMULAIRE EST VIDE.</div>'; return; }
+  if (!raw) { SoundFX.error(); msgEl.innerHTML = '<div class="msg error">LE FORMULAIRE EST VIDE.</div>'; return; }
 
   const links = Array.from(new Set((raw.match(/https?:\/\/\S+/g) || [])));
 
@@ -66,10 +68,12 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
   });
 
   if (error || !data.ok) {
+    SoundFX.error();
     msgEl.innerHTML = '<div class="msg error">ÉCHEC DE L\'ARCHIVAGE. RÉESSAYEZ.</div>';
     return;
   }
 
+  SoundFX.success();
   msgEl.innerHTML = `<div class="msg">FICHE ARCHIVÉE SOUS <strong>${data.archive_id}</strong>.</div>`;
   loadTemplate(currentType);
 });

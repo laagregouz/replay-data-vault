@@ -146,6 +146,59 @@ th { color: var(--muted); text-transform: uppercase; font-size: 0.7rem; letter-s
 .boot-line { opacity: 0; animation: boot-in 0.3s forwards; }
 @keyframes boot-in { to { opacity: 1; } }
 
+/* Balayage lumineux façon écran terminal */
+body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0,0,0,0) 0px,
+    rgba(0,0,0,0) 1px,
+    rgba(0,0,0,0.06) 2px
+  );
+}
+body::after {
+  content: "";
+  position: fixed; left: 0; right: 0; top: -80px; height: 80px;
+  pointer-events: none; z-index: 9998;
+  background: linear-gradient(rgba(57,255,136,0.05), transparent);
+  animation: scan-sweep 7s linear infinite;
+}
+@keyframes scan-sweep {
+  0% { top: -80px; }
+  100% { top: 100%; }
+}
+
+/* Apparition progressive des blocs */
+.frame, .archive-block, .stat-tile {
+  opacity: 0;
+  animation: boot-in 0.35s ease forwards;
+}
+.archive-block:nth-of-type(2) { animation-delay: 0.05s; }
+.archive-block:nth-of-type(3) { animation-delay: 0.1s; }
+.archive-block:nth-of-type(4) { animation-delay: 0.15s; }
+.stat-tile:nth-of-type(2) { animation-delay: 0.05s; }
+.stat-tile:nth-of-type(3) { animation-delay: 0.1s; }
+.stat-tile:nth-of-type(4) { animation-delay: 0.15s; }
+.stat-tile:nth-of-type(5) { animation-delay: 0.2s; }
+.stat-tile:nth-of-type(6) { animation-delay: 0.25s; }
+
+/* Indicateur "en ligne" clignotant */
+.online-dot {
+  display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green); margin-right: 6px;
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.sound-toggle {
+  background: transparent; border: 1px solid var(--green-dim); color: var(--muted);
+  font-family: inherit; font-size: 0.75rem; padding: 4px 8px; cursor: pointer;
+  text-transform: none; letter-spacing: 0;
+}
+.sound-toggle:hover { background: transparent; color: var(--green); box-shadow: none; border-color: var(--green); }
+
 .center { text-align: center; }
 .muted { color: var(--muted); }
 .small { font-size: 0.75rem; }

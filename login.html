@@ -45,6 +45,7 @@
 </div>
 
 <script src="js/supabaseClient.js"></script>
+<script src="js/sound.js"></script>
 <script>
 const tabLogin = document.getElementById("tabLogin");
 const tabRegister = document.getElementById("tabRegister");
@@ -52,10 +53,12 @@ const loginForm = document.getElementById("loginForm");
 const registerForm = document.getElementById("registerForm");
 
 tabLogin.addEventListener("click", () => {
+  SoundFX.click();
   tabLogin.classList.add("active"); tabRegister.classList.remove("active");
   loginForm.style.display = "block"; registerForm.style.display = "none";
 });
 tabRegister.addEventListener("click", () => {
+  SoundFX.click();
   tabRegister.classList.add("active"); tabLogin.classList.remove("active");
   registerForm.style.display = "block"; loginForm.style.display = "none";
 });
@@ -73,7 +76,8 @@ document.getElementById("loginBtn").addEventListener("click", async () => {
     email: identifiantToEmail(identifiant),
     password
   });
-  if (error) { showMsg("loginMsg","IDENTIFIANT OU MOT DE PASSE INCORRECT.","error"); return; }
+  if (error) { SoundFX.error(); showMsg("loginMsg","IDENTIFIANT OU MOT DE PASSE INCORRECT.","error"); return; }
+  SoundFX.success();
   window.location.href = "dashboard.html";
 });
 
@@ -82,12 +86,13 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
   const identifiant = document.getElementById("regIdentifiant").value.trim();
   const password = document.getElementById("regPassword").value;
 
-  if (!code || !identifiant || !password) { showMsg("registerMsg","REMPLISSEZ TOUS LES CHAMPS.","error"); return; }
-  if (password.length < 6) { showMsg("registerMsg","MOT DE PASSE TROP COURT (6 CARACTÈRES MINIMUM).","error"); return; }
+  if (!code || !identifiant || !password) { SoundFX.error(); showMsg("registerMsg","REMPLISSEZ TOUS LES CHAMPS.","error"); return; }
+  if (password.length < 6) { SoundFX.error(); showMsg("registerMsg","MOT DE PASSE TROP COURT (6 CARACTÈRES MINIMUM).","error"); return; }
 
   const email = identifiantToEmail(identifiant);
   const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
   if (signUpError) {
+    SoundFX.error();
     showMsg("registerMsg", signUpError.message.includes("already") ? "IDENTIFIANT DÉJÀ UTILISÉ." : "ERREUR D'INSCRIPTION.", "error");
     return;
   }
@@ -113,11 +118,13 @@ document.getElementById("registerBtn").addEventListener("click", async () => {
       CODE_EPUISE: "CE CODE A DÉJÀ ÉTÉ UTILISÉ.",
       IDENTIFIANT_PRIS: "CET IDENTIFIANT EST DÉJÀ PRIS."
     };
+    SoundFX.error();
     showMsg("registerMsg", map[reason] || "ÉCHEC DE L'INSCRIPTION.", "error");
     await sb.auth.signOut();
     return;
   }
 
+  SoundFX.success();
   window.location.href = "dashboard.html";
 });
 </script>
