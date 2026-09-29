@@ -1,7 +1,19 @@
 // REPLAY CORE — gestion de session (utilisé sur toutes les pages sauf index.html)
 
+function showFatalError(title, detail) {
+  document.body.innerHTML = `<div class="shell"><div class="frame"><div class="msg error">
+    ${title}<br><br>
+    <span class="small">${(detail || "").toString().replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</span>
+    <br><br><a href="login.html">← RETOUR À LA CONNEXION</a>
+  </div></div></div>`;
+}
+
 async function requireSession() {
-  const { data: { session } } = await sb.auth.getSession();
+  const { data: { session }, error: sessionError } = await sb.auth.getSession();
+  if (sessionError) {
+    showFatalError("ERREUR DE SESSION.", sessionError.message);
+    throw new Error("session error");
+  }
   if (!session) {
     window.location.href = "login.html";
     return null;
@@ -13,9 +25,8 @@ async function requireSession() {
     .single();
 
   if (error || !profile) {
-    await sb.auth.signOut();
-    window.location.href = "login.html";
-    return null;
+    showFatalError("ERREUR DE CHARGEMENT DU PROFIL.", error ? `${error.message} (code: ${error.code || '?'})` : "Aucun profil trouvé pour ce compte.");
+    throw new Error("profile fetch failed");
   }
   if (profile.status === "SUSPENDU") {
     document.body.innerHTML =
