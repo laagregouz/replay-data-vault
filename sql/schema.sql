@@ -57,23 +57,41 @@ alter table accreditation_codes enable row level security;
 alter table counters enable row level security;
 alter table fiches enable row level security;
 
+-- Fonctions "de confiance" pour vérifier le statut d'un membre SANS
+-- redéclencher les règles de sécurité sur la table profiles elle-même
+-- (une règle qui s'interroge elle-même provoque une boucle infinie).
+create or replace function is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from profiles where id = auth.uid() and access_level = 'ADMIN');
+$$;
+
+create or replace function is_active_member()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from profiles where id = auth.uid() and status = 'ACTIF');
+$$;
+
+grant execute on function is_admin() to authenticated;
+grant execute on function is_active_member() to authenticated;
+
 -- Profils : chacun voit son propre profil, les admins voient tout le monde
 create policy "profil visible par son propriétaire" on profiles
   for select using (auth.uid() = id);
 create policy "les admins voient tous les profils" on profiles
-  for select using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.access_level = 'ADMIN')
-  );
+  for select using (is_admin());
 create policy "les admins modifient tous les profils" on profiles
-  for update using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.access_level = 'ADMIN')
-  );
+  for update using (is_admin());
 
 -- Codes d'accréditation : réservés aux admins (la création de compte passe par une fonction séparée, voir plus bas)
 create policy "les admins gèrent les codes" on accreditation_codes
-  for all using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.access_level = 'ADMIN')
-  );
+  for all using (is_admin());
 
 -- Compteurs : lecture publique pour tout membre connecté
 create policy "compteurs visibles par les membres connectés" on counters
@@ -81,17 +99,11 @@ create policy "compteurs visibles par les membres connectés" on counters
 
 -- Fiches : tout membre actif peut lire et créer, personne ne peut modifier/supprimer sauf un admin
 create policy "fiches visibles par les membres actifs" on fiches
-  for select using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.status = 'ACTIF')
-  );
+  for select using (is_active_member());
 create policy "les membres actifs peuvent archiver une fiche" on fiches
-  for insert with check (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.status = 'ACTIF')
-  );
+  for insert with check (is_active_member());
 create policy "les admins peuvent supprimer une fiche" on fiches
-  for delete using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.access_level = 'ADMIN')
-  );
+  for delete using (is_admin());
 
 -- =========================================================
 -- FONCTIONS (le "cerveau" côté serveur, sécurisé)
